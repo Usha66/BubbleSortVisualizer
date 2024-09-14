@@ -19,7 +19,7 @@ WHITE = (255, 255, 255)
 
 # Load puppy image
 puppy_img_path = "C:\\Users\\usha\\OneDrive\\Desktop\\pup.jpeg"  # Specify the file path to your puppy image
-puppy_img = pygame.image.load(puppy_img_path).convert_alpha()  # Load image using the file path
+puppy_img = pygame.image.load(puppy_img_path).convert_alpha()
 
 # Scale down the puppy image
 puppy_width, puppy_height = 80, 80  # Specify the desired width and height
@@ -39,15 +39,15 @@ start_time = time.time()
 
 def draw():
     screen.fill(BLACK)
-    
+
     # Draw instructions
     text_start_sort = font.render("Press ENTER to start sorting", True, GOLD)
     text_generate_array = font.render("Press R to generate new array", True, GOLD)
-    text_time = font_small.render("Running Time (sec): " + str(int(time.time() - start_time)), True, GOLD)
+    text_time = font_small.render(f"Running Time (sec): {int(time.time() - start_time)}", True, GOLD)
     screen.blit(text_start_sort, (20, 20))
     screen.blit(text_generate_array, (20, 50))
     screen.blit(text_time, (screen_width - 200, 20))
-    
+
     # Draw puppies representing array elements
     for i in range(array_length):
         puppy_scaled_height = array[i]  # Scale puppy height based on array value
@@ -58,29 +58,29 @@ def draw():
 
     pygame.display.update()
 
-def bubble_sort(arr):
+def bubble_sort_generator(arr):
+    """ A generator that performs bubble sort step by step """
     n = len(arr)
     for i in range(n):
-        for j in range(0, n-i-1):
-            if arr[j] > arr[j+1]:
-                arr[j], arr[j+1] = arr[j+1], arr[j]
-                array_colors[j] = DARK_PINK
-                array_colors[j+1] = DARK_PURPLE
-                draw()
-                array_colors[j] = GOLD
-                array_colors[j+1] = DARK_BLUE
-                draw()
+        for j in range(0, n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                yield arr  # Yield after every swap
 
 def generate_array():
-    global array, array_colors, start_time
+    global array, array_colors, start_time, sorting_generator
     array = [random.randint(50, 400) for _ in range(array_length)]  # Adjusted range for better visualization
     array_colors = [DARK_BLUE] * array_length
     start_time = time.time()
+    sorting_generator = None  # Reset the sorting generator
     draw()
 
+# Initialize sorting generator
+sorting_generator = None
 generate_array()
 
 running = True
+sorting = False
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -88,7 +88,18 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                 generate_array()
-            if event.key == pygame.K_RETURN:
-                bubble_sort(array)
+                sorting = False
+            if event.key == pygame.K_RETURN and not sorting:
+                sorting = True
+                sorting_generator = bubble_sort_generator(array)  # Initialize sorting generator
+
+    # Handle sorting and drawing
+    if sorting and sorting_generator is not None:
+        try:
+            next(sorting_generator)  # Perform the next step in bubble sort
+            draw()
+            pygame.time.delay(20)  # Delay to visualize each step
+        except StopIteration:
+            sorting = False  # Sorting finished
 
 pygame.quit()
